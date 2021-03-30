@@ -20,6 +20,7 @@ class BatchStack extends Stack {
     // The job definition for the container
     // which gets run from the image at scale
     const jobDef = new JobDefinition(this, "JobDefinition", {
+      jobDefinitionName: "MyTask",
       container: {
         image: new EcrImage(repo, "latest"),
         memoryLimitMiB: 512,
@@ -45,6 +46,7 @@ class BatchStack extends Stack {
 
     const computeEnvHigh = new ComputeEnvironment(this, "ComputeEnvironmentHigh", {
       enabled: true,
+      computeEnvironmentName: "HighCapacity",
       computeResources: {
         type: ComputeResourceType.SPOT,
         bidPercentage: 75,
@@ -56,6 +58,7 @@ class BatchStack extends Stack {
 
     const computeEnvDefault = new ComputeEnvironment(this, "ComputeEnvironmentDefault", {
       enabled: true,
+      computeEnvironmentName: "DefaultCapacity",
       computeResources: {
         type: ComputeResourceType.SPOT,
         bidPercentage: 100,
@@ -70,6 +73,7 @@ class BatchStack extends Stack {
     // based on their capacity and order
     const jobQueue = new JobQueue(this, "JobQueue", {
       enabled: true,
+      jobQueueName: "MyQueue",
       computeEnvironments: [
         {
           computeEnvironment: computeEnvHigh,
