@@ -25,6 +25,10 @@ class BatchStack extends Stack {
         memoryLimitMiB: 512,
         readOnly: true,
         vcpus: 1,
+        command: ["Ref::MyParam"],
+      },
+      parameters: {
+        "MyParam": "",
       },
       timeout: Duration.minutes(10),
     });
@@ -44,7 +48,7 @@ class BatchStack extends Stack {
       computeResources: {
         type: ComputeResourceType.SPOT,
         bidPercentage: 75,
-        minvCpus: 0,
+        minvCpus: 0, // make sure to shut down the cluster on idle
         maxvCpus: 8,
         vpc,
       },
@@ -55,7 +59,7 @@ class BatchStack extends Stack {
       computeResources: {
         type: ComputeResourceType.SPOT,
         bidPercentage: 100,
-        minvCpus: 0,
+        minvCpus: 0, // make sure to shut down the cluster on idle
         maxvCpus: 1,
         vpc,
       },

@@ -13,7 +13,7 @@ AWS console quick links for the deployed starter project
 
 To submit a job
 
-    aws batch submit-job --job-name MyJob --job-queue <job-queue-arn> --job-definition <job-definition-arn>
+    aws batch submit-job --job-name MyJob --job-queue <job-queue-arn> --job-definition <job-definition-arn> --parameters MyParam=MyValue
 
 To get job queue ARNs
 
