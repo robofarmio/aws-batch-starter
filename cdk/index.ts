@@ -10,14 +10,37 @@ class BatchStack extends Stack {
   constructor(scope: App, id: string, props?: StackProps) {
     super(scope, id, props)
 
+    // The ECR container image registry to run
+    // the batch job containers from at scale
     const repo = new Repository(this, "Repo", {
       repositoryName: "robofarm/aws-batch-starter",
       lifecycleRules: [ { maxImageCount: 5 } ],
     });
 
+    // The job definition for the container
+    // which gets run from the image at scale
+    const jobDef = new JobDefinition(this, "JobDefinition", {
+      container: {
+        image: new EcrImage(repo, "latest"),
+        memoryLimitMiB: 512,
+        readOnly: true,
+        vcpus: 1,
+      },
+      timeout: Duration.minutes(10),
+    });
+
+    // The VPC to run the batch jobs in,
+    // and all the infrastructure below
     const vpc = new Vpc(this, "VPC");
 
-    const spotEnv = new ComputeEnvironment(this, "ComputeEnvironment", {
+    // Compute environments with different
+    // - price points
+    // - max cluster size
+    // The idea is to scale out wider when
+    // it is cheap on the spot market to do
+
+    const computeEnvHigh = new ComputeEnvironment(this, "ComputeEnvironmentHigh", {
+      enabled: true,
       computeResources: {
         type: ComputeResourceType.SPOT,
         bidPercentage: 75,
@@ -27,23 +50,32 @@ class BatchStack extends Stack {
       },
     });
 
-    const jobQueue = new JobQueue(this, "JobQueue", {
-      computeEnvironments: [
-        {
-          computeEnvironment: spotEnv,
-          order: 1,
-        },
-      ],
+    const computeEnvDefault = new ComputeEnvironment(this, "ComputeEnvironmentDefault", {
+      enabled: true,
+      computeResources: {
+        type: ComputeResourceType.SPOT,
+        bidPercentage: 100,
+        minvCpus: 0,
+        maxvCpus: 1,
+        vpc,
+      },
     });
 
-    const jobDef = new JobDefinition(this, "JobDefinition", {
-      container: {
-        image: new EcrImage(repo, "latest"),
-        memoryLimitMiB: 512,
-        readOnly: true,
-        vcpus: 1,
-      },
-      timeout: Duration.minutes(10),
+    // The batch queue, distributing jobs
+    // onto different compute environments
+    // based on their capacity and order
+    const jobQueue = new JobQueue(this, "JobQueue", {
+      enabled: true,
+      computeEnvironments: [
+        {
+          computeEnvironment: computeEnvHigh,
+          order: 1,
+        },
+        {
+          computeEnvironment: computeEnvDefault,
+          order: 2,
+        },
+      ],
     });
 
   }
