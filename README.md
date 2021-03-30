@@ -1,3 +1,10 @@
+<h1 align='center'>AWS Batch Starter</h1>
+
+<p align=center>
+  <img src="assets/aws-batch-starter.png" />
+</p>
+
+
 ## Overview
 
 This repository is an example for using AWS Batch with the AWS CDK.
