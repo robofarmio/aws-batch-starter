@@ -3,7 +3,7 @@ import { App, Stack, StackProps, Duration } from "@aws-cdk/core";
 import { Vpc } from  "@aws-cdk/aws-ec2";
 import { Repository } from  "@aws-cdk/aws-ecr";
 import { EcrImage } from  "@aws-cdk/aws-ecs";
-import { ComputeEnvironment, JobQueue, JobDefinition, ComputeResourceType } from "@aws-cdk/aws-batch";
+import { ComputeEnvironment, JobQueue, JobDefinition, ComputeResourceType, CfnJobDefinition } from "@aws-cdk/aws-batch";
 
 
 class BatchStack extends Stack {
@@ -27,12 +27,24 @@ class BatchStack extends Stack {
         readOnly: true,
         vcpus: 1,
         command: ["Ref::MyParam"],
+        // environment: { }, //
+        // secrets: { }, // https://github.com/aws/aws-cdk/issues/10976
       },
       parameters: {
         "MyParam": "",
       },
       timeout: Duration.minutes(10),
     });
+
+    // Secrets are not yet supported in the high-level JobDefinition
+    //  - https://github.com/aws/aws-cdk/issues/10976
+    //  - https://docs.aws.amazon.com/cdk/api/latest/docs/@aws-cdk_aws-batch.CfnJobDefinition.ContainerPropertiesProperty.html#secrets
+    const cfnJobDef = jobDef.node.defaultChild as CfnJobDefinition;
+    const cfnContainerProps = cfnJobDef.containerProperties as CfnJobDefinition.ContainerPropertiesProperty;
+
+    (cfnContainerProps as any).secrets = [
+      { name: "MySecret", valueFrom: "MySecretArn" },
+    ];
 
     // The VPC to run the batch jobs in,
     // and all the infrastructure below
