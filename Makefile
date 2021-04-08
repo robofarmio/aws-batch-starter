@@ -5,7 +5,7 @@ i: install
 
 
 update:
-	@docker-compose --pull --no-cache
+	@docker-compose build --pull --no-cache
 
 u: update
 

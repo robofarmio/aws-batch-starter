@@ -16,6 +16,16 @@ AWS console quick links for the deployed starter project
 - [Dashboard](https://eu-central-1.console.aws.amazon.com/batch/v2/home?region=eu-central-1)
 
 
+## Explanations
+
+Todo: explain
+- ComputeEnvironment, JobDefinition, JobQueue
+- Baseline vs scale out cluster
+- Shutdown on idle: min cpus
+- Secrets
+- Volume
+
+
 ## Queue
 
 To submit a job

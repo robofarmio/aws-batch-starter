@@ -1,9 +1,10 @@
 import { App, Stack, StackProps, Duration } from "@aws-cdk/core";
 
-import { Vpc } from  "@aws-cdk/aws-ec2";
+import { Vpc, LaunchTemplate, EbsDeviceVolumeType } from  "@aws-cdk/aws-ec2";
 import { Repository } from  "@aws-cdk/aws-ecr";
 import { EcrImage } from  "@aws-cdk/aws-ecs";
 import { ComputeEnvironment, JobQueue, JobDefinition, ComputeResourceType, CfnJobDefinition } from "@aws-cdk/aws-batch";
+import { Secret } from "@aws-cdk/aws-secretsmanager";
 
 
 class BatchStack extends Stack {
@@ -39,22 +40,45 @@ class BatchStack extends Stack {
     // Secrets are not yet supported in the high-level JobDefinition
     //  - https://github.com/aws/aws-cdk/issues/10976
     //  - https://docs.aws.amazon.com/cdk/api/latest/docs/@aws-cdk_aws-batch.CfnJobDefinition.ContainerPropertiesProperty.html#secrets
-    const cfnJobDef = jobDef.node.defaultChild as CfnJobDefinition;
-    const cfnContainerProps = cfnJobDef.containerProperties as CfnJobDefinition.ContainerPropertiesProperty;
-
-    (cfnContainerProps as any).secrets = [
-      { name: "MySecret", valueFrom: "MySecretArn" },
-    ];
+    //const cfnJobDef = jobDef.node.defaultChild as CfnJobDefinition;
+    //const cfnContainerProps = cfnJobDef.containerProperties as CfnJobDefinition.ContainerPropertiesProperty;
+    //
+    //(cfnContainerProps as any).secrets = [
+    //  { name: "MySecret", valueFrom: "MySecretArn" },
+    //];
 
     // The VPC to run the batch jobs in,
     // and all the infrastructure below
     const vpc = new Vpc(this, "VPC");
+
+    // Use a custom launch template to
+    // attach more disk space to instances
+    const LAUNCH_TEMPLATE_NAME = "increase-volume-size";
+
+    const launchTemplate = new LaunchTemplate(this, "LaunchTemplate", {
+      launchTemplateName: LAUNCH_TEMPLATE_NAME,
+      blockDevices: [
+        {
+          deviceName: "/dev/xvda", // for Amazon Linux 2 (default)
+          volume: {
+            ebsDevice: {
+              volumeType: EbsDeviceVolumeType.GP2,
+              volumeSize: 100,  // 100 GiB
+            },
+          },
+        },
+      ],
+    });
 
     // Compute environments with different
     // - price points
     // - max cluster size
     // The idea is to scale out wider when
     // it is cheap on the spot market to do
+
+    // By not setting an instance type, we get
+    // "optimal" meaning C4, M4, and R4, or if
+    // not available, C5, M5, and R5 families
 
     const computeEnvHigh = new ComputeEnvironment(this, "ComputeEnvironmentHigh", {
       enabled: true,
@@ -64,7 +88,10 @@ class BatchStack extends Stack {
         bidPercentage: 75,
         minvCpus: 0, // make sure to shut down the cluster on idle
         maxvCpus: 8,
-        vpc,
+        vpc: vpc,
+        launchTemplate: {
+          launchTemplateName: LAUNCH_TEMPLATE_NAME,
+        },
       },
     });
 
@@ -76,7 +103,10 @@ class BatchStack extends Stack {
         bidPercentage: 100,
         minvCpus: 0, // make sure to shut down the cluster on idle
         maxvCpus: 1,
-        vpc,
+        vpc: vpc,
+        launchTemplate: {
+          launchTemplateName: LAUNCH_TEMPLATE_NAME,
+        },
       },
     });
 

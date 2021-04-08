@@ -2,3 +2,4 @@
 
 echo "It works!"
 echo "Parameter from message: $1"
+df -h

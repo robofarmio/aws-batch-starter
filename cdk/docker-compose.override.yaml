@@ -5,8 +5,9 @@ services:
   dev:
     build: .
     volumes:
-      - ./package.json:/home/node/app/package.json
-      - ./package-lock.json:/home/node/app/package-lock.json
-      - ./tsconfig.json:/home/node/app/tsconfig.json
-      - ./cdk.json:/home/node/app/cdk.json
-      - ./index.ts:/home/node/app/index.ts
+      - ./:/home/node/app/
+      #- ./package.json:/home/node/app/package.json
+      #- ./package-lock.json:/home/node/app/package-lock.json
+      #- ./tsconfig.json:/home/node/app/tsconfig.json
+      #- ./cdk.json:/home/node/app/cdk.json
+      #- ./index.ts:/home/node/app/index.ts
