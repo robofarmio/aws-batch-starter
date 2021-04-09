@@ -1,6 +1,8 @@
 import { App, Stack, StackProps, Duration } from "@aws-cdk/core";
 
-import { Vpc, SubnetType, LaunchTemplate, EbsDeviceVolumeType } from  "@aws-cdk/aws-ec2";
+
+import { Vpc, SubnetType, LaunchTemplate, EbsDeviceVolumeType, SecurityGroup, Peer, Port } from  "@aws-cdk/aws-ec2";
+
 import { Repository } from  "@aws-cdk/aws-ecr";
 import { EcrImage } from  "@aws-cdk/aws-ecs";
 import { ComputeEnvironment, JobQueue, JobDefinition, ComputeResourceType, CfnJobDefinition } from "@aws-cdk/aws-batch";
@@ -47,6 +49,7 @@ class BatchStack extends Stack {
     //  { name: "MySecret", valueFrom: "MySecretArn" },
     //];
 
+
     // The VPC to run the batch jobs in; we use a new VPC
     // with public subnets, because our image needs to be
     // able to make calls to the internet; at the same time
@@ -64,6 +67,18 @@ class BatchStack extends Stack {
         },
       ],
     });
+
+
+
+    const securityGroup = new SecurityGroup(this, "BatchStackStarterSecurityGroup", {
+      vpc: vpc,
+      securityGroupName: "BatchStackStarterSecurityGroup",
+
+    })
+    securityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(22), 'SSH from anywhere');
+
+
+    
 
 
     // Use a custom launch template to
@@ -104,6 +119,7 @@ class BatchStack extends Stack {
         minvCpus: 0, // make sure to shut down the cluster on idle
         maxvCpus: 8,
         vpc: vpc,
+        securityGroups: [securityGroup],
         launchTemplate: {
           launchTemplateName: LAUNCH_TEMPLATE_NAME,
         },
@@ -119,6 +135,7 @@ class BatchStack extends Stack {
         minvCpus: 0, // make sure to shut down the cluster on idle
         maxvCpus: 1,
         vpc: vpc,
+        securityGroups: [securityGroup],
         launchTemplate: {
           launchTemplateName: LAUNCH_TEMPLATE_NAME,
         },
