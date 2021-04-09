@@ -1,3 +1,5 @@
+aws_account = 884515231596
+
 install:
 	@docker-compose build
 
@@ -17,10 +19,10 @@ r: run
 
 
 publish: install
-	@aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 884515231596.dkr.ecr.eu-central-1.amazonaws.com
-	@docker image tag robofarm/aws-batch-starter 884515231596.dkr.ecr.eu-central-1.amazonaws.com/robofarm/aws-batch-starter
-	@docker image push 884515231596.dkr.ecr.eu-central-1.amazonaws.com/robofarm/aws-batch-starter
-	@docker logout 884515231596.dkr.ecr.eu-central-1.amazonaws.com
+	@aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${aws_account}.dkr.ecr.eu-central-1.amazonaws.com
+	@docker image tag robofarm/aws-batch-starter ${aws_account}.dkr.ecr.eu-central-1.amazonaws.com/robofarm/aws-batch-starter
+	@docker image push ${aws_account}.dkr.ecr.eu-central-1.amazonaws.com/robofarm/aws-batch-starter
+	@docker logout ${aws_account}.dkr.ecr.eu-central-1.amazonaws.com
 
 p: publish
 

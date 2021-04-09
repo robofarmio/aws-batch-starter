@@ -1,12 +1,11 @@
-import { App, Stack, StackProps, Duration, RemovalPolicy } from "@aws-cdk/core";
-
-
-import { Vpc, SubnetType, LaunchTemplate, EbsDeviceVolumeType, SecurityGroup, Peer, Port } from  "@aws-cdk/aws-ec2";
-
-import { Repository } from  "@aws-cdk/aws-ecr";
-import { EcrImage } from  "@aws-cdk/aws-ecs";
-import { ComputeEnvironment, JobQueue, JobDefinition, ComputeResourceType, CfnJobDefinition } from "@aws-cdk/aws-batch";
+import { CfnJobDefinition, ComputeEnvironment, ComputeResourceType, JobDefinition, JobQueue } from "@aws-cdk/aws-batch";
+import { EbsDeviceVolumeType, LaunchTemplate, Peer, Port, SecurityGroup, SubnetType, Vpc } from "@aws-cdk/aws-ec2";
+import { Repository } from "@aws-cdk/aws-ecr";
+import { EcrImage } from "@aws-cdk/aws-ecs";
+import { CfnRole, Effect, PolicyStatement, Role, ServicePrincipal } from "@aws-cdk/aws-iam";
 import { Secret } from "@aws-cdk/aws-secretsmanager";
+import { App, Duration, RemovalPolicy, Stack, StackProps } from "@aws-cdk/core";
+
 
 
 class BatchStack extends Stack {
@@ -17,9 +16,48 @@ class BatchStack extends Stack {
     // the batch job containers from at scale
     const repo = new Repository(this, "Repo", {
       repositoryName: "robofarm/aws-batch-starter",
-      lifecycleRules: [ { maxImageCount: 5 } ],
+      lifecycleRules: [{ maxImageCount: 5 }],
       removalPolicy: RemovalPolicy.DESTROY,
     });
+
+    // Role to grant access to the secret manager which we create below
+    // This role is used to start the container and inject
+    // all secrets. Per defat a role is created that has access to pul the 
+    // container etc but because we also want to inject secrets as env 
+    // variables we create this role ourselves. 
+    const taskExecutionRole = new Role(this, "taskExecutionRole", {
+      assumedBy: new ServicePrincipal('ecs-tasks.amazonaws.com'),
+    })
+
+    // Needs access to cloudwatch logs, otherwise we cannot see the logs of this task
+    taskExecutionRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      resources: ['*'],
+      actions: ['logs:CreateLogStream', 'logs:PutLogEvents'],
+    }));
+
+    // Access to pull the docker image
+    taskExecutionRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      resources: [repo.repositoryArn],
+      actions: ['ecr:BatchCheckLayerAvailability', 'ecr:GetDownloadUrlForLayer', 'ecr:BatchGetImage'],
+    }));
+    taskExecutionRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      resources: ['*'],
+      actions: ['ecr:GetAuthorizationToken'],
+    }));
+
+    // Secret manager that can store secets later whcih we access in the job via environment variables
+    const secret = new Secret(this, 'MySecrets', {
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({}),
+        generateStringKey: 'MY_SECRET'
+      },
+    });
+
+    // and grant access to this secret manager.
+    secret.grantRead(taskExecutionRole);
 
     // The job definition for the container
     // which gets run from the image at scale
@@ -30,9 +68,7 @@ class BatchStack extends Stack {
         memoryLimitMiB: 512,
         readOnly: true,
         vcpus: 1,
-        command: ["Ref::MyParam"],
-        // environment: { }, //
-        // secrets: { }, // https://github.com/aws/aws-cdk/issues/10976
+        command: ["/usr/src/app/main.sh", "Ref::MyParam"],
       },
       parameters: {
         "MyParam": "",
@@ -43,13 +79,16 @@ class BatchStack extends Stack {
     // Secrets are not yet supported in the high-level JobDefinition
     //  - https://github.com/aws/aws-cdk/issues/10976
     //  - https://docs.aws.amazon.com/cdk/api/latest/docs/@aws-cdk_aws-batch.CfnJobDefinition.ContainerPropertiesProperty.html#secrets
-    //const cfnJobDef = jobDef.node.defaultChild as CfnJobDefinition;
-    //const cfnContainerProps = cfnJobDef.containerProperties as CfnJobDefinition.ContainerPropertiesProperty;
-    //
-    //(cfnContainerProps as any).secrets = [
-    //  { name: "MySecret", valueFrom: "MySecretArn" },
-    //];
+    // So we hack it:
+    const cfnJobDef = jobDef.node.defaultChild as CfnJobDefinition;
+    const cfnContainerProps = cfnJobDef.containerProperties as CfnJobDefinition.ContainerPropertiesProperty;
+    (cfnContainerProps as any).secrets = [
+      { name: "MY_SECRET", valueFrom: secret.secretArn.concat(':MY_SECRET::') },
+    ];
 
+    // Setting the execution role which the job needs for secrets manager access etc is not supported either but we can apply the same hack.
+    const cfnTaskExecutionRole = taskExecutionRole.node.defaultChild as CfnRole
+    (cfnContainerProps as any).executionRoleArn = cfnTaskExecutionRole.attrArn;
 
     // The VPC to run the batch jobs in; we use a new VPC
     // with public subnets, because our image needs to be
@@ -74,6 +113,9 @@ class BatchStack extends Stack {
       vpc: vpc,
       securityGroupName: "BatchStackStarterSecurityGroup",
     });
+
+    // we only neeed to define inbound rules, outbound is allowed per default
+    securityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(22), 'SSH frm anywhere');
 
     // Use a custom launch template to
     // attach more disk space to instances
@@ -135,6 +177,7 @@ class BatchStack extends Stack {
         },
       },
     });
+
 
     // The batch queue, distributing jobs
     // onto different compute environments
