@@ -1,6 +1,6 @@
 import { App, Stack, StackProps, Duration } from "@aws-cdk/core";
 
-import { Vpc, LaunchTemplate, EbsDeviceVolumeType } from  "@aws-cdk/aws-ec2";
+import { Vpc, SubnetType, LaunchTemplate, EbsDeviceVolumeType } from  "@aws-cdk/aws-ec2";
 import { Repository } from  "@aws-cdk/aws-ecr";
 import { EcrImage } from  "@aws-cdk/aws-ecs";
 import { ComputeEnvironment, JobQueue, JobDefinition, ComputeResourceType, CfnJobDefinition } from "@aws-cdk/aws-batch";
@@ -47,9 +47,24 @@ class BatchStack extends Stack {
     //  { name: "MySecret", valueFrom: "MySecretArn" },
     //];
 
-    // The VPC to run the batch jobs in,
-    // and all the infrastructure below
-    const vpc = new Vpc(this, "VPC");
+    // The VPC to run the batch jobs in; we use a new VPC
+    // with public subnets, because our image needs to be
+    // able to make calls to the internet; at the same time
+    // we do not want a private subnet, because it would
+    // eat up ElasticIPs for the NAT gateways. We use
+    // security groups below instead to restrict inbound.
+
+    const vpc = new Vpc(this, "VPC", {
+      cidr: "10.0.0.0/16",
+      maxAzs: 4,
+      subnetConfiguration: [
+        {
+          name: "public",
+          subnetType: SubnetType.PUBLIC,
+        },
+      ],
+    });
+
 
     // Use a custom launch template to
     // attach more disk space to instances
