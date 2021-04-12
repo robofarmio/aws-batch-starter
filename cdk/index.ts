@@ -37,16 +37,7 @@ class BatchStack extends Stack {
     }));
 
     // Access to pull the docker image
-    taskExecutionRole.addToPolicy(new PolicyStatement({
-      effect: Effect.ALLOW,
-      resources: [repo.repositoryArn],
-      actions: ['ecr:BatchCheckLayerAvailability', 'ecr:GetDownloadUrlForLayer', 'ecr:BatchGetImage'],
-    }));
-    taskExecutionRole.addToPolicy(new PolicyStatement({
-      effect: Effect.ALLOW,
-      resources: ['*'],
-      actions: ['ecr:GetAuthorizationToken'],
-    }));
+    repo.grantPull(taskExecutionRole)
 
     // Secret manager that can store secets later whcih we access in the job via environment variables
     const secret = new Secret(this, 'MySecrets', {
