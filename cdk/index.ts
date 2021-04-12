@@ -169,7 +169,6 @@ class BatchStack extends Stack {
       },
     });
 
-
     // The batch queue, distributing jobs
     // onto different compute environments
     // based on their capacity and order
