@@ -1,4 +1,4 @@
-import { App, Stack, StackProps, Duration } from "@aws-cdk/core";
+import { App, Stack, StackProps, Duration, RemovalPolicy } from "@aws-cdk/core";
 
 
 import { Vpc, SubnetType, LaunchTemplate, EbsDeviceVolumeType, SecurityGroup, Peer, Port } from  "@aws-cdk/aws-ec2";
@@ -18,6 +18,7 @@ class BatchStack extends Stack {
     const repo = new Repository(this, "Repo", {
       repositoryName: "robofarm/aws-batch-starter",
       lifecycleRules: [ { maxImageCount: 5 } ],
+      removalPolicy: RemovalPolicy.DESTROY,
     });
 
     // The job definition for the container
@@ -68,18 +69,11 @@ class BatchStack extends Stack {
       ],
     });
 
-
-
+    // By default: allow no inbound, all outbound
     const securityGroup = new SecurityGroup(this, "BatchStackStarterSecurityGroup", {
       vpc: vpc,
       securityGroupName: "BatchStackStarterSecurityGroup",
-
-    })
-    securityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(22), 'SSH from anywhere');
-
-
-    
-
+    });
 
     // Use a custom launch template to
     // attach more disk space to instances
