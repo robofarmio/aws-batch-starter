@@ -1,5 +1,3 @@
-aws_account = 884515231596
-
 install:
 	@docker-compose build
 

@@ -26,6 +26,53 @@ Todo: explain
 - Volume
 
 
+## Deployment of batch stack with cdk
+
+You can find everything deployment related in the [cdk](./cdk) directory.
+
+To set up the cdk deployment in a container run
+    
+    cd ./cdk
+
+    docker-compose build
+
+    docker-compose run dev bash
+
+And in the container run once
+
+    npm install
+
+
+Inside the container, set up credentials to deploy
+
+    export AWS_ACCESS_KEY_ID=
+    export AWS_SECRET_ACCESS_KEY=
+    export AWS_DEFAULT_REGION=eu-central-1
+
+Build and deploy the cdk app
+
+    npm run build
+
+    npm run cdk ls
+    npm run cdk diff BatchStarterStack
+    npm run cdk deploy BatchStarterStack
+
+For AWS CDK documentation, see
+- https://docs.aws.amazon.com/cdk/latest/guide/core_concepts.html
+- https://docs.aws.amazon.com/cdk/api/latest/docs/aws-construct-library.html
+
+
+## publish container
+
+To build and publish the starter container that is then us in test, in the root directory  run
+
+   make install
+
+to build a container after changes where made and then 
+
+   make publish aws_account=YOUR_AWS_ACCOUNT_NUMBER
+
+
 ## Queue
 
 To submit a job
@@ -43,26 +90,3 @@ To get job definition ARNs
 
 For AWS CLI documentation, see
 - https://docs.aws.amazon.com/cli/latest/reference/batch/
-
-
-## Deployment
-
-You can find everything deployment related in the [cdk](./cdk) directory.
-
-Inside the container in the cdk directory, set up credentials to deploy
-
-    export AWS_ACCESS_KEY_ID=
-    export AWS_SECRET_ACCESS_KEY=
-    export AWS_DEFAULT_REGION=eu-central-1
-
-Build and deploy the cdk app
-
-    npm run build
-
-    npm run cdk ls
-    npm run cdk diff BatchStarterStack
-    npm run cdk deploy BatchStarterStack
-
-For AWS CDK documentation, see
-- https://docs.aws.amazon.com/cdk/latest/guide/core_concepts.html
-- https://docs.aws.amazon.com/cdk/api/latest/docs/aws-construct-library.html
