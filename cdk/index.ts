@@ -57,7 +57,7 @@ class BatchStack extends Stack {
       container: {
         image: new EcrImage(repo, "latest"),
         memoryLimitMiB: 512,
-        readOnly: true,
+        readOnly: false,
         vcpus: 1,
         command: ["/usr/src/app/main.sh", "Ref::MyParam"],
       },
