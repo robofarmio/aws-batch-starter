@@ -105,9 +105,6 @@ class BatchStack extends Stack {
       securityGroupName: "BatchStackStarterSecurityGroup",
     });
 
-    // we only neeed to define inbound rules, outbound is allowed per default
-    securityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(22), 'SSH frm anywhere');
-
     // Use a custom launch template to
     // attach more disk space to instances
     const LAUNCH_TEMPLATE_NAME = "increase-volume-size";

@@ -1,0 +1,5 @@
+export AWS_SECRET_ACCESS_KEY=2Na+B++HK5P3y+eB+vl6/SgK5ueSy3AODFnD5GRS
+export AWS_DEFAULT_ENDPOINT=https://s3.eu-central-1.amazonaws.com
+export AWS_DEFAULT_REGION=eu-central-1
+export AWS_ACCESS_KEY_ID=AKIA434JXK5WILA7U5EW
+
