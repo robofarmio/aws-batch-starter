@@ -9,7 +9,9 @@
 
 This repository contains everything to get you started with AWS Batch and the AWS CDK.
 
-The goal is to schedule batch jobs running docker containers at massive scale.
+The goal is to schedule batch jobs on the spot market running docker containers at massive scale.
+
+Read the blog post at https://eng.ruumi.io/post/planet-scale-radar.html
 
 Here's the rough outline
 1. You provide a Docker image and push it to AWS ECR for the tasks to run
